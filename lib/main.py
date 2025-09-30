@@ -2,6 +2,7 @@
 import pygame
 import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib.Var import ANCHO, ALTO, MENU, JUGAR, INSTRUCCIONES
 from lib.Color import BLANCO, NEGRO, AZUL, GRIS
 from lib.Core import Botella, Gota
