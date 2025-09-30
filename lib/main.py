@@ -1,4 +1,5 @@
 
+
 import pygame
 import sys
 import os
@@ -13,20 +14,14 @@ pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Aqua survivor")
 fuente = pygame.font.SysFont("Consolas", 28)
 
-# --- Cargar textura de tierra para los bloques ---
-
-
-# Textura de bloque de tierra personalizada
 TEX_PATH = os.path.join("lib", "Sprite", "Obtaculos", "obstaculo.jpeg")
 if os.path.exists(TEX_PATH):
     block_texture = pygame.image.load(TEX_PATH)
-    block_texture = pygame.transform.scale(block_texture, (40, 28))  # tamaño base, se ajusta luego
+    block_texture = pygame.transform.scale(block_texture, (40, 28))
 else:
     block_texture = pygame.Surface((40, 28))
-    block_texture.fill((139, 69, 19))  # color marrón de fallback
+    block_texture.fill((139, 69, 19))
 
-
-# Fondo del juego
 FONDO_PATH = os.path.join("lib", "Sprite", "Fondos", "fondojuego.png")
 if os.path.exists(FONDO_PATH):
     fondo_juego = pygame.image.load(FONDO_PATH)
@@ -41,14 +36,12 @@ else:
 
 estado = MENU
 
-# Variables de juego
 respuesta = ""
 mensaje = ""
 camino = []
 
-# Posiciones clave
-grifo_pos = (ANCHO//2, 120)  # Grifo arriba al centro
-botella_rect = pygame.Rect(ANCHO//2 - 40, ALTO - 180, 80, 150)  # Botella abajo
+grifo_pos = (ANCHO//2, 120) 
+botella_rect = pygame.Rect(ANCHO//2 - 40, ALTO - 180, 80, 150) 
 
 def dibujar_fondo_rejilla():
     pantalla.fill(BLANCO)
@@ -58,7 +51,6 @@ def dibujar_fondo_rejilla():
         pygame.draw.line(pantalla, GRIS, (0, y), (ANCHO, y))
 
 def dibujar_menu():
-    # Fondo de menú personalizado
     fondo_menu_path = os.path.join("lib", "Sprite", "Fondos", "fondomenu.webp")
     if os.path.exists(fondo_menu_path):
         fondo_menu = pygame.image.load(fondo_menu_path)
@@ -68,7 +60,6 @@ def dibujar_menu():
         dibujar_fondo_rejilla()
 
 def dibujar_instrucciones():
-    # Fondo de instrucciones personalizado
     fondo_inst_path = os.path.join("lib", "Sprite", "Fondos", "fondoinstrucciones.png")
     if os.path.exists(fondo_inst_path):
         fondo_inst = pygame.image.load(fondo_inst_path)
@@ -102,10 +93,7 @@ def dibujar_instrucciones():
         pantalla.blit(texto, (30, 80 + i*32))
 
 def dibujar_botella():
-    # Usar imagen personalizada de recipiente
-    # Cambia la imagen si el objetivo está cumplido
     recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua.png")
-    # Mostrar botella llena solo si se cumple el objetivo de gotas
     global minijuego, estado
     mostrar_llena = False
     if 'minijuego' in globals() and estado == "miniwh2":
@@ -122,7 +110,6 @@ def dibujar_botella():
         recipiente_img = pygame.transform.scale(recipiente_img, (botella_rect.width, botella_rect.height))
         pantalla.blit(recipiente_img, (botella_rect.left, botella_rect.top))
     else:
-        # Fallback: dibujar la botella como antes
         pygame.draw.rect(pantalla, BLANCO, botella_rect, 0)
         pygame.draw.rect(pantalla, NEGRO, botella_rect, 3)
         ojo1 = (botella_rect.centerx - 15, botella_rect.top + 40)
@@ -131,12 +118,10 @@ def dibujar_botella():
         pygame.draw.circle(pantalla, NEGRO, ojo2, 6)
         boca_rect = pygame.Rect(botella_rect.centerx - 20, botella_rect.top + 80, 40, 20)
         pygame.draw.arc(pantalla, NEGRO, boca_rect, 3.14, 0, 3)
-    # Indicador de llenado si es correcto
     if mensaje == "Correcto":
         pygame.draw.rect(pantalla, AZUL, (botella_rect.left, botella_rect.bottom - 60, 80, 60))
 
 def dibujar_grifo():
-    # Un grifo simple arriba al centro
     pygame.draw.rect(pantalla, NEGRO, (grifo_pos[0]-20, grifo_pos[1]-20, 40, 20))
     pygame.draw.rect(pantalla, NEGRO, (grifo_pos[0]-5, grifo_pos[1]-20, 10, 40))
     pygame.draw.circle(pantalla, NEGRO, (grifo_pos[0], grifo_pos[1]+20), 10)
@@ -144,28 +129,22 @@ def dibujar_grifo():
 def dibujar_juego():
     dibujar_fondo_rejilla()
 
-    # Dibujar grifo y botella
     dibujar_grifo()
     dibujar_botella()
 
-    # Camino dibujado
     if len(camino) > 1:
         pygame.draw.lines(pantalla, AZUL, False, camino, 5)
 
-    # Pregunta
     pregunta = fuente.render("¿Cuántos litros de agua por día?", True, NEGRO)
     pantalla.blit(pregunta, (30, 40))
 
-    # Respuesta escrita
     texto_resp = fuente.render(respuesta, True, NEGRO)
     pantalla.blit(texto_resp, (30, 80))
 
-    # Mensaje de validación
     if mensaje:
         msj = fuente.render(mensaje, True, NEGRO)
         pantalla.blit(msj, (30, 120))
 
-# --- Clases y lógica del minijuego tipo Where is My Water 2 ---
 import random
 
 
@@ -183,17 +162,15 @@ class MiniWhereIsMyWater:
     def __init__(self, pantalla, nivel=0):
         self.pantalla = pantalla
         self.nivel = nivel
-        # Filas de bloques de tierra según el nivel
         filas_por_nivel = [3, 6, 9]
         filas = filas_por_nivel[self.nivel] if self.nivel < len(filas_por_nivel) else 3
         bloques_por_fila = 12
         bloque_ancho = ANCHO // bloques_por_fila
         self.botella = Botella(ANCHO//2, ALTO-80, ancho=2*bloque_ancho, alto=80)
         self.gotas = []
-        self.caminos = []  # lista de rects
+        self.caminos = []  
         self.dibujando = False
         self.linea_actual = []
-        # Crear una estructura de bloques de tierra (filas según nivel)
         self.bloques = []
         bloque_alto = 28
         y_inicio = 280 
@@ -211,7 +188,6 @@ class MiniWhereIsMyWater:
         for fila, col in posiciones:
             if len(seleccionados) >= cantidad_no_borrables:
                 pass
-            # No seleccionar si hay un bloque no borrable adyacente
             adyacentes = [
                 (fila-1, col), (fila+1, col),
                 (fila, col-1), (fila, col+1)
@@ -243,20 +219,16 @@ class MiniWhereIsMyWater:
             rect = msj.get_rect(center=(ANCHO//2, ALTO//2))
             msj2 = fuente_chica.render("Presiona ESC para volver al menú", True, (0,100,0))
             rect2 = msj2.get_rect(center=(ANCHO//2, ALTO//2+60))
-            # Fondo blanco y borde verde como el mensaje de ¡Victoria!
             fondo_rect = rect.union(rect2).inflate(40, 30)
             pygame.draw.rect(self.pantalla, (255,255,255), fondo_rect)
             pygame.draw.rect(self.pantalla, (0,100,0), fondo_rect, 4)
             self.pantalla.blit(msj, rect)
             self.pantalla.blit(msj2, rect2)
             return None
-        # Mostrar texto informativo al inicio de cada nivel
-        # Mostrar texto informativo al inicio de cada nivel (siempre que no se haya ganado)
         if not self.comenzado and not self.victoria:
             info = self.INFO_NIVELES[self.nivel] if self.nivel < len(self.INFO_NIVELES) else ""
             fuente_info = pygame.font.SysFont("Consolas", 18)
             lines = []
-            # Separar el texto en líneas de máximo 45 caracteres para que no se corte
             texto = info
             while len(texto) > 45:
                 corte = texto[:45].rfind(" ")
@@ -273,8 +245,8 @@ class MiniWhereIsMyWater:
             if self.botella.gotas_recibidas < self.meta:
                 if self.ticks % 3 == 0 and not self.victoria and self.gotas_generadas < self.max_gotas:
                     for i in range(5):
-                        offset = random.uniform(-2, 2)  # Menor apertura horizontal
-                        vx = random.uniform(-0.05, 0.05)  # Menor velocidad lateral
+                        offset = random.uniform(-2, 2)  
+                        vx = random.uniform(-0.05, 0.05)
                         self.gotas.append(Gota(ANCHO//2 + offset, 180, vx=vx, vy=0, radio=1))
                     self.gotas_generadas += 1
         for event in events:
@@ -312,7 +284,6 @@ class MiniWhereIsMyWater:
             if gota.viva and self.botella.rect.collidepoint(gota.x, gota.y):
                 gota.viva = False
                 self.botella.recibe_gota()
-        # Fondo personalizado
         if fondo_juego:
             self.pantalla.blit(fondo_juego, (0, 0))
         else:
@@ -322,16 +293,13 @@ class MiniWhereIsMyWater:
             self.pantalla.blit(tex, b)
             tupla = (b.x, b.y, b.width, b.height)
             if tupla in self.tuplas_no_borrables:
-                # Dibuja un borde rojo grueso para indicar que no se puede borrar
                 pygame.draw.rect(self.pantalla, (200,0,0), b, 4)
         for seg in self.caminos:
             pygame.draw.rect(self.pantalla, (100,100,100), seg)
-        # Mostrar la botella llena si se alcanzó la meta
         mostrar_llena = self.botella.gotas_recibidas >= self.meta
         self.botella.draw(self.pantalla, mostrar_llena=mostrar_llena)
         for gota in self.gotas:
             gota.draw(self.pantalla)
-        # Mostrar el contador en litros (1 litro = 30 gotas)
         fuente_chica = pygame.font.SysFont("Consolas", 15)
         gotas_por_litro = 30
         litros_actual = self.botella.gotas_recibidas / gotas_por_litro
@@ -339,11 +307,9 @@ class MiniWhereIsMyWater:
         texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {litros_actual:.2f}/{litros_objetivo:.2f} litros", True, (255,255,255))
         self.pantalla.blit(texto, (20, 20))
 
-        # Mostrar texto informativo debajo del contador
         if not self.comenzado and not self.victoria:
             info = self.INFO_NIVELES[self.nivel] if self.nivel < len(self.INFO_NIVELES) else ""
             fuente_info = pygame.font.SysFont("Consolas", 14)
-            # Ajustar el texto para que ocupe todo el ancho de la pantalla
             max_width = ANCHO - 40
             words = info.split()
             lines = []
@@ -416,7 +382,7 @@ def main():
                     if event.key == pygame.K_RETURN:
                         try:
                             valor = float(respuesta)
-                            if 2 <= valor <= 3:  # rango correcto de litros recomendados
+                            if 2 <= valor <= 3: 
                                 mensaje = "Correcto"
                             else:
                                 mensaje = "Incorrecto"
@@ -428,7 +394,6 @@ def main():
                         if event.unicode.isdigit() or event.unicode == ".":
                             respuesta += event.unicode
 
-                # Dibujar camino con mouse
                 if pygame.mouse.get_pressed()[0]:
                     camino.append(pygame.mouse.get_pos())
 
@@ -438,7 +403,6 @@ def main():
                     mensaje = ""
                     camino = []
 
-        # Render según estado
         if estado == MENU:
             dibujar_menu()
         elif estado == INSTRUCCIONES:
