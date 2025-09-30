@@ -316,9 +316,17 @@ class Gota:
             pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.radio)
 
 class MiniWhereIsMyWater:
-    def __init__(self, pantalla):
+    LEVELS = [
+        {"meta": 30, "max_gotas": 100},
+        {"meta": 60, "max_gotas": 200},
+        {"meta": 100, "max_gotas": 300},
+    ]
+    def __init__(self, pantalla, nivel=0):
         self.pantalla = pantalla
-        filas = 12
+        self.nivel = nivel
+        # Filas de bloques de tierra según el nivel
+        filas_por_nivel = [3, 6, 9]
+        filas = filas_por_nivel[self.nivel] if self.nivel < len(filas_por_nivel) else 3
         bloques_por_fila = 12
         bloque_ancho = ANCHO // bloques_por_fila
         self.botella = Botella(ANCHO//2, ALTO-80, ancho=2*bloque_ancho, alto=80)
@@ -326,7 +334,7 @@ class MiniWhereIsMyWater:
         self.caminos = []  # lista de rects
         self.dibujando = False
         self.linea_actual = []
-        # Crear una estructura de bloques de tierra (12 filas, bloques más anchos)
+        # Crear una estructura de bloques de tierra (filas según nivel)
         self.bloques = []
         bloque_alto = 28
         y_inicio = 180
@@ -334,21 +342,33 @@ class MiniWhereIsMyWater:
             for col in range(bloques_por_fila):
                 self.bloques.append(pygame.Rect(col * bloque_ancho, y_inicio + fila * bloque_alto, bloque_ancho, bloque_alto))
         self.ticks = 0
-        self.meta = 100
+        self.meta = self.LEVELS[self.nivel]["meta"]
+        self.max_gotas = self.LEVELS[self.nivel]["max_gotas"]
         self.gotas_generadas = 0
         self.victoria = False
         self.comenzado = False
         self.boton_rect = pygame.Rect(ANCHO//2 - 80, 120, 160, 50)
+        self.final_victoria = False
     def run(self, events):
-        # Lógica y render de un frame
+        if self.final_victoria:
+            for event in events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    return "menu"
+            self.pantalla.fill((255,255,255))
+            fuente_chica = pygame.font.SysFont("Consolas", 16)
+            msj = fuente_chica.render("¡Felicidades! Completaste todos los niveles", True, (0,100,0))
+            rect = msj.get_rect(center=(ANCHO//2, ALTO//2))
+            self.pantalla.blit(msj, rect)
+            msj2 = fuente_chica.render("Presiona ESC para volver al menú", True, (0,100,0))
+            rect2 = msj2.get_rect(center=(ANCHO//2, ALTO//2+60))
+            self.pantalla.blit(msj2, rect2)
+            return None
         if self.comenzado:
             self.ticks += 1
-            # Detener creación de gotas si se alcanza la meta
             if self.botella.gotas_recibidas < self.meta:
-                if self.ticks % 3 == 0 and not self.victoria and self.gotas_generadas < 2000:
-                    # Generar varias gotas pequeñas con posiciones y velocidades distintas
+                if self.ticks % 3 == 0 and not self.victoria and self.gotas_generadas < self.max_gotas:
                     for i in range(5):
-                        offset = random.uniform(-5, 5)  # 50% menos ancho
+                        offset = random.uniform(-5, 5)
                         vx = random.uniform(-0.15, 0.15)
                         self.gotas.append(Gota(ANCHO//2 + offset, 60, vx=vx, vy=0, radio=2))
                     self.gotas_generadas += 1
@@ -360,14 +380,12 @@ class MiniWhereIsMyWater:
                     if self.boton_rect.collidepoint(event.pos):
                         self.comenzado = True
                     else:
-                        # Permitir eliminar bloques antes de comenzar
                         for b in self.bloques[:]:
                             if b.collidepoint(event.pos):
                                 self.bloques.remove(b)
                                 break
             else:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    # Permitir eliminar bloques durante el juego
                     for b in self.bloques[:]:
                         if b.collidepoint(event.pos):
                             self.bloques.remove(b)
@@ -384,45 +402,41 @@ class MiniWhereIsMyWater:
                     self.linea_actual = []
                 if event.type == pygame.MOUSEMOTION and self.dibujando:
                     self.linea_actual.append(event.pos)
-        # Actualizar gotas
         for gota in self.gotas:
             gota.update(self.bloques, self.caminos, self.gotas)
-            # Chequear si llega a la botella
             if gota.viva and self.botella.rect.collidepoint(gota.x, gota.y):
                 gota.viva = False
                 self.botella.recibe_gota()
-        # Dibujar fondo
         self.pantalla.fill((180,140,90))
-        # Dibujar bloques
         for b in self.bloques:
             tex = pygame.transform.scale(block_texture, (b.width, b.height))
             self.pantalla.blit(tex, b)
-        # Dibujar caminos
         for seg in self.caminos:
             pygame.draw.rect(self.pantalla, (100,100,100), seg)
-        # Línea actual (eliminada para no dibujar mientras se mantiene el mouse)
-        # Dibujar botella
         self.botella.draw(self.pantalla)
-        # Dibujar gotas
         for gota in self.gotas:
             gota.draw(self.pantalla)
-        # Contador
-        fuente_chica = pygame.font.SysFont("Consolas", 18)
-        texto = fuente_chica.render(f"Gotas en botella: {self.botella.gotas_recibidas}ml/{self.meta}ml", True, (0,0,0))
+        fuente_chica = pygame.font.SysFont("Consolas", 15)
+        texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {self.botella.gotas_recibidas}ml/{self.meta}ml", True, (0,0,0))
         self.pantalla.blit(texto, (20, 20))
-        # Botón Comenzar
         if not self.comenzado:
             pygame.draw.rect(self.pantalla, (0, 180, 80), self.boton_rect, border_radius=12)
             txt = fuente.render("¡Comenzar!", True, (255,255,255))
             self.pantalla.blit(txt, (self.boton_rect.centerx - txt.get_width()//2, self.boton_rect.centery - txt.get_height()//2))
-        # Victoria
         if self.botella.gotas_recibidas >= self.meta:
             self.victoria = True
-            msj = fuente.render("¡Victoria! Presiona ESC", True, (0,100,0))
-            rect = msj.get_rect(center=(ANCHO//2, ALTO//2))
-            pygame.draw.rect(self.pantalla, (255,255,255), rect.inflate(40, 30))
-            pygame.draw.rect(self.pantalla, (0,100,0), rect.inflate(40, 30), 4)
-            self.pantalla.blit(msj, rect)
+            if self.nivel < 2:
+                fuente_chica = pygame.font.SysFont("Consolas", 15)
+                msj = fuente_chica.render("¡Victoria! Presiona ESPACIO para siguiente nivel", True, (0,100,0))
+                rect = msj.get_rect(center=(ANCHO//2, ALTO//2))
+                pygame.draw.rect(self.pantalla, (255,255,255), rect.inflate(40, 30))
+                pygame.draw.rect(self.pantalla, (0,100,0), rect.inflate(40, 30), 4)
+                self.pantalla.blit(msj, rect)
+                for event in events:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        return "next"
+            else:
+                self.final_victoria = True
         return False
 
 # --- Bucle principal ---
@@ -482,8 +496,15 @@ while True:
     elif estado == INSTRUCCIONES:
         dibujar_instrucciones()
     elif estado == "miniwh2":
-        terminado = minijuego.run(events)
-        if terminado:
+        resultado = minijuego.run(events)
+        if resultado == True:
+            estado = MENU
+        elif resultado == "next":
+            if minijuego.nivel < 2:
+                minijuego = MiniWhereIsMyWater(pantalla, nivel=minijuego.nivel+1)
+            else:
+                minijuego.final_victoria = True
+        elif resultado == "menu":
             estado = MENU
 
     pygame.display.flip()
