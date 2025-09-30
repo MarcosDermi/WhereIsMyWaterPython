@@ -18,17 +18,19 @@ fuente = pygame.font.SysFont("Consolas", 28)
 
 # --- Cargar textura de tierra para los bloques ---
 
-# Textura de bloque de tierra
-import urllib.request
-TEX_PATH = "tierra_block.jpg"
-if not os.path.exists(TEX_PATH):
-    url = "https://img.freepik.com/foto-gratis/vista-superior-tierra_23-2148175893.jpg"
-    urllib.request.urlretrieve(url, TEX_PATH)
-block_texture = pygame.image.load(TEX_PATH)
-block_texture = pygame.transform.scale(block_texture, (40, 28))  # tamaño base, se ajusta luego
+
+# Textura de bloque de tierra personalizada
+TEX_PATH = os.path.join("lib", "Sprite", "Obtaculos", "obstaculo.jpeg")
+if os.path.exists(TEX_PATH):
+    block_texture = pygame.image.load(TEX_PATH)
+    block_texture = pygame.transform.scale(block_texture, (40, 28))  # tamaño base, se ajusta luego
+else:
+    block_texture = pygame.Surface((40, 28))
+    block_texture.fill((139, 69, 19))  # color marrón de fallback
+
 
 # Fondo del juego
-FONDO_PATH = os.path.join("lib", "Sprite", "Fondos", "fondo.jpeg")
+FONDO_PATH = os.path.join("lib", "Sprite", "Fondos", "fondojuego.png")
 if os.path.exists(FONDO_PATH):
     fondo_juego = pygame.image.load(FONDO_PATH)
     fondo_juego = pygame.transform.scale(fondo_juego, (ANCHO, ALTO))
@@ -59,19 +61,24 @@ def dibujar_fondo_rejilla():
         pygame.draw.line(pantalla, GRIS, (0, y), (ANCHO, y))
 
 def dibujar_menu():
-    dibujar_fondo_rejilla()
-    titulo = fuente.render("💧 Aqua survivor 💧", True, NEGRO)
-    opciones = [
-        fuente.render("1. Jugar", True, NEGRO),
-        fuente.render("2. Instrucciones", True, NEGRO),
-        fuente.render("3. Salir", True, NEGRO)
-    ]
-    pantalla.blit(titulo, (ANCHO//2 - titulo.get_width()//2, 150))
-    for i, opcion in enumerate(opciones):
-        pantalla.blit(opcion, (ANCHO//2 - opcion.get_width()//2, 250 + i*60))
+    # Fondo de menú personalizado
+    fondo_menu_path = os.path.join("lib", "Sprite", "Fondos", "fondomenu.webp")
+    if os.path.exists(fondo_menu_path):
+        fondo_menu = pygame.image.load(fondo_menu_path)
+        fondo_menu = pygame.transform.scale(fondo_menu, (ANCHO, ALTO))
+        pantalla.blit(fondo_menu, (0, 0))
+    else:
+        dibujar_fondo_rejilla()
 
 def dibujar_instrucciones():
-    dibujar_fondo_rejilla()
+    # Fondo de instrucciones personalizado
+    fondo_inst_path = os.path.join("lib", "Sprite", "Fondos", "fondoinstrucciones.png")
+    if os.path.exists(fondo_inst_path):
+        fondo_inst = pygame.image.load(fondo_inst_path)
+        fondo_inst = pygame.transform.scale(fondo_inst, (ANCHO, ALTO))
+        pantalla.blit(fondo_inst, (0, 0))
+    else:
+        dibujar_fondo_rejilla()
     instrucciones = [
         "INSTRUCCIONES DEL MINIJUEGO:",
         "",
@@ -92,9 +99,9 @@ def dibujar_instrucciones():
         "",
         "¡Diviértete sobre el recorrido del agua!"
     ]
-    fuente_inst = pygame.font.SysFont("Consolas", 17)
+    fuente_inst = pygame.font.SysFont("Consolas", 17, bold=True)
     for i, linea in enumerate(instrucciones):
-        texto = fuente_inst.render(linea, True, (0,0,0))
+        texto = fuente_inst.render(linea, True, (255,255,255))
         pantalla.blit(texto, (30, 80 + i*32))
 
 def dibujar_botella():
@@ -202,17 +209,17 @@ class Gota:
     def update(self, bloques, caminos, gotas=None):
         if not self.viva:
             return
-        self.vy += 0.045  # gravedad aumentada para que bajen 50% más rápido
+        self.vy += 0.020  # gravedad reducida para que bajen 50% más lento
         # Repulsión simple entre gotas cercanas (simula presión de agua)
         if gotas is not None:
             for otra in gotas:
                 if otra is not self and otra.viva:
                     dx = self.x - otra.x
                     dy = self.y - otra.y
-                    dist = (dx**2 + dy**2)**0.5
+                    dist = (dx**2 + dy**2) ** 0.5
                     if dist < self.radio*2 and dist > 0:
-                        self.vx += dx * 0.01
-                        self.vy += dy * 0.01
+                        self.vx += dx * 0.005
+                        self.vy += dy * 0.005
         nueva_x = self.x + self.vx
         nueva_y = self.y + self.vy
         bloque_colision = None
@@ -293,7 +300,7 @@ class MiniWhereIsMyWater:
         # Crear una estructura de bloques de tierra (filas según nivel)
         self.bloques = []
         bloque_alto = 28
-        y_inicio = 180
+        y_inicio = 280 
         todos_los_bloques = []
         posiciones = []
         for fila in range(filas):
@@ -335,13 +342,16 @@ class MiniWhereIsMyWater:
             for event in events:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     return "menu"
-            self.pantalla.fill((255,255,255))
             fuente_chica = pygame.font.SysFont("Consolas", 16)
             msj = fuente_chica.render("¡Felicidades! Completaste todos los niveles", True, (0,100,0))
             rect = msj.get_rect(center=(ANCHO//2, ALTO//2))
-            self.pantalla.blit(msj, rect)
             msj2 = fuente_chica.render("Presiona ESC para volver al menú", True, (0,100,0))
             rect2 = msj2.get_rect(center=(ANCHO//2, ALTO//2+60))
+            # Fondo blanco y borde verde como el mensaje de ¡Victoria!
+            fondo_rect = rect.union(rect2).inflate(40, 30)
+            pygame.draw.rect(self.pantalla, (255,255,255), fondo_rect)
+            pygame.draw.rect(self.pantalla, (0,100,0), fondo_rect, 4)
+            self.pantalla.blit(msj, rect)
             self.pantalla.blit(msj2, rect2)
             return None
         # Mostrar texto informativo al inicio de cada nivel
@@ -367,9 +377,9 @@ class MiniWhereIsMyWater:
             if self.botella.gotas_recibidas < self.meta:
                 if self.ticks % 3 == 0 and not self.victoria and self.gotas_generadas < self.max_gotas:
                     for i in range(5):
-                        offset = random.uniform(-5, 5)
-                        vx = random.uniform(-0.15, 0.15)
-                        self.gotas.append(Gota(ANCHO//2 + offset, 60, vx=vx, vy=0, radio=1))
+                        offset = random.uniform(-2, 2)  # Menor apertura horizontal
+                        vx = random.uniform(-0.05, 0.05)  # Menor velocidad lateral
+                        self.gotas.append(Gota(ANCHO//2 + offset, 180, vx=vx, vy=0, radio=1))
                     self.gotas_generadas += 1
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -432,7 +442,7 @@ class MiniWhereIsMyWater:
         gotas_por_litro = 30
         litros_actual = self.botella.gotas_recibidas / gotas_por_litro
         litros_objetivo = self.meta / gotas_por_litro
-        texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {litros_actual:.2f}/{litros_objetivo:.2f} litros", True, (0,0,0))
+        texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {litros_actual:.2f}/{litros_objetivo:.2f} litros", True, (255,255,255))
         self.pantalla.blit(texto, (20, 20))
 
         # Mostrar texto informativo debajo del contador
@@ -455,7 +465,7 @@ class MiniWhereIsMyWater:
                 lines.append(current_line)
             y_base = 50
             for i, linea in enumerate(lines):
-                t = fuente_info.render(linea, True, (0,0,0))
+                t = fuente_info.render(linea, True, (255,255,255))
                 x = (ANCHO - t.get_width()) // 2
                 self.pantalla.blit(t, (x, y_base + i*28))
 
