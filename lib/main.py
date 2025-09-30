@@ -338,9 +338,34 @@ class MiniWhereIsMyWater:
         self.bloques = []
         bloque_alto = 28
         y_inicio = 180
+        todos_los_bloques = []
+        posiciones = []
         for fila in range(filas):
             for col in range(bloques_por_fila):
-                self.bloques.append(pygame.Rect(col * bloque_ancho, y_inicio + fila * bloque_alto, bloque_ancho, bloque_alto))
+                rect = pygame.Rect(col * bloque_ancho, y_inicio + fila * bloque_alto, bloque_ancho, bloque_alto)
+                todos_los_bloques.append(rect)
+                posiciones.append((fila, col))
+        total_bloques = len(todos_los_bloques)
+        cantidad_no_borrables = int(total_bloques * 0.2)
+        random.shuffle(posiciones)
+        seleccionados = set()
+        for fila, col in posiciones:
+            if len(seleccionados) >= cantidad_no_borrables:
+                break
+            # No seleccionar si hay un bloque no borrable adyacente
+            adyacentes = [
+                (fila-1, col), (fila+1, col),
+                (fila, col-1), (fila, col+1)
+            ]
+            if any((f, c) in seleccionados for f, c in adyacentes):
+                continue
+            seleccionados.add((fila, col))
+        self.tuplas_no_borrables = set()
+        for fila, col in seleccionados:
+            idx = fila * bloques_por_fila + col
+            r = todos_los_bloques[idx]
+            self.tuplas_no_borrables.add((r.x, r.y, r.width, r.height))
+        self.bloques = list(todos_los_bloques)
         self.ticks = 0
         self.meta = self.LEVELS[self.nivel]["meta"]
         self.max_gotas = self.LEVELS[self.nivel]["max_gotas"]
@@ -381,13 +406,15 @@ class MiniWhereIsMyWater:
                         self.comenzado = True
                     else:
                         for b in self.bloques[:]:
-                            if b.collidepoint(event.pos):
+                            tupla = (b.x, b.y, b.width, b.height)
+                            if b.collidepoint(event.pos) and tupla not in self.tuplas_no_borrables:
                                 self.bloques.remove(b)
                                 break
             else:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     for b in self.bloques[:]:
-                        if b.collidepoint(event.pos):
+                        tupla = (b.x, b.y, b.width, b.height)
+                        if b.collidepoint(event.pos) and tupla not in self.tuplas_no_borrables:
                             self.bloques.remove(b)
                             break
                     else:
@@ -411,6 +438,10 @@ class MiniWhereIsMyWater:
         for b in self.bloques:
             tex = pygame.transform.scale(block_texture, (b.width, b.height))
             self.pantalla.blit(tex, b)
+            tupla = (b.x, b.y, b.width, b.height)
+            if tupla in self.tuplas_no_borrables:
+                # Dibuja un borde rojo grueso para indicar que no se puede borrar
+                pygame.draw.rect(self.pantalla, (200,0,0), b, 4)
         for seg in self.caminos:
             pygame.draw.rect(self.pantalla, (100,100,100), seg)
         self.botella.draw(self.pantalla)
