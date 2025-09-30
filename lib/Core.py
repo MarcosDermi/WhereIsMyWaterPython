@@ -108,7 +108,7 @@ class Gota:
 	def update(self, bloques, caminos, gotas=None):
 		if not self._viva:
 			return
-		self._vy += 0.020  # gravedad reducida para que bajen 50% más lento
+		self._vy += 0.020  
 		if gotas is not None:
 			for otra in gotas:
 				if otra is not self and otra._viva:
