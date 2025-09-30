@@ -316,6 +316,11 @@ class Gota:
             pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.radio)
 
 class MiniWhereIsMyWater:
+    INFO_NIVELES = [
+        "Hacen 20 grados y necesitamos que el balde se llene con 2 litros de agua, ¿podrías ayudarnos a lograrlo?",
+        "Hacen 25 grados y necesitamos que el balde se llene con 2,5 litros de agua, ¿podrías ayudarnos a lograrlo?",
+        "Hacen 30 grados y necesitamos que el balde se llene con 3 litros de agua, ¿podrías ayudarnos a lograrlo?"
+    ]
     LEVELS = [
         {"meta": 30, "max_gotas": 100},
         {"meta": 60, "max_gotas": 200},
@@ -388,6 +393,24 @@ class MiniWhereIsMyWater:
             rect2 = msj2.get_rect(center=(ANCHO//2, ALTO//2+60))
             self.pantalla.blit(msj2, rect2)
             return None
+        # Mostrar texto informativo al inicio de cada nivel
+        # Mostrar texto informativo al inicio de cada nivel (siempre que no se haya ganado)
+        if not self.comenzado and not self.victoria:
+            info = self.INFO_NIVELES[self.nivel] if self.nivel < len(self.INFO_NIVELES) else ""
+            fuente_info = pygame.font.SysFont("Consolas", 18)
+            lines = []
+            # Separar el texto en líneas de máximo 45 caracteres para que no se corte
+            texto = info
+            while len(texto) > 45:
+                corte = texto[:45].rfind(" ")
+                if corte == -1:
+                    corte = 45
+                lines.append(texto[:corte])
+                texto = texto[corte:].lstrip()
+            lines.append(texto)
+            for i, linea in enumerate(lines):
+                t = fuente_info.render(linea, True, (0,0,0))
+                self.pantalla.blit(t, (30, 60 + i*28))
         if self.comenzado:
             self.ticks += 1
             if self.botella.gotas_recibidas < self.meta:
@@ -450,6 +473,31 @@ class MiniWhereIsMyWater:
         fuente_chica = pygame.font.SysFont("Consolas", 15)
         texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {self.botella.gotas_recibidas}ml/{self.meta}ml", True, (0,0,0))
         self.pantalla.blit(texto, (20, 20))
+
+        # Mostrar texto informativo debajo del contador
+        if not self.comenzado and not self.victoria:
+            info = self.INFO_NIVELES[self.nivel] if self.nivel < len(self.INFO_NIVELES) else ""
+            fuente_info = pygame.font.SysFont("Consolas", 14)
+            # Ajustar el texto para que ocupe todo el ancho de la pantalla
+            max_width = ANCHO - 40
+            words = info.split()
+            lines = []
+            current_line = ""
+            for word in words:
+                test_line = current_line + (" " if current_line else "") + word
+                if fuente_info.size(test_line)[0] <= max_width:
+                    current_line = test_line
+                else:
+                    lines.append(current_line)
+                    current_line = word
+            if current_line:
+                lines.append(current_line)
+            y_base = 50
+            for i, linea in enumerate(lines):
+                t = fuente_info.render(linea, True, (0,0,0))
+                x = (ANCHO - t.get_width()) // 2
+                self.pantalla.blit(t, (x, y_base + i*28))
+
         if not self.comenzado:
             pygame.draw.rect(self.pantalla, (0, 180, 80), self.boton_rect, border_radius=12)
             txt = fuente.render("¡Comenzar!", True, (255,255,255))
