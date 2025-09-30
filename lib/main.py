@@ -17,6 +17,8 @@ pygame.display.set_caption("Aqua survivor")
 fuente = pygame.font.SysFont("Consolas", 28)
 
 # --- Cargar textura de tierra para los bloques ---
+
+# Textura de bloque de tierra
 import urllib.request
 TEX_PATH = "tierra_block.jpg"
 if not os.path.exists(TEX_PATH):
@@ -24,6 +26,14 @@ if not os.path.exists(TEX_PATH):
     urllib.request.urlretrieve(url, TEX_PATH)
 block_texture = pygame.image.load(TEX_PATH)
 block_texture = pygame.transform.scale(block_texture, (40, 28))  # tamaño base, se ajusta luego
+
+# Fondo del juego
+FONDO_PATH = os.path.join("lib", "Sprite", "Fondos", "fondo.jpeg")
+if os.path.exists(FONDO_PATH):
+    fondo_juego = pygame.image.load(FONDO_PATH)
+    fondo_juego = pygame.transform.scale(fondo_juego, (ANCHO, ALTO))
+else:
+    fondo_juego = None
 
 
 
@@ -88,17 +98,36 @@ def dibujar_instrucciones():
         pantalla.blit(texto, (30, 80 + i*32))
 
 def dibujar_botella():
-    # Botella
-    pygame.draw.rect(pantalla, BLANCO, botella_rect, 0)
-    pygame.draw.rect(pantalla, NEGRO, botella_rect, 3)
-    # Cara de la botella
-    ojo1 = (botella_rect.centerx - 15, botella_rect.top + 40)
-    ojo2 = (botella_rect.centerx + 15, botella_rect.top + 40)
-    pygame.draw.circle(pantalla, NEGRO, ojo1, 6)
-    pygame.draw.circle(pantalla, NEGRO, ojo2, 6)
-    boca_rect = pygame.Rect(botella_rect.centerx - 20, botella_rect.top + 80, 40, 20)
-    pygame.draw.arc(pantalla, NEGRO, boca_rect, 3.14, 0, 3)
-
+    # Usar imagen personalizada de recipiente
+    # Cambia la imagen si el objetivo está cumplido
+    recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua.png")
+    # Mostrar botella llena solo si se cumple el objetivo de gotas
+    global minijuego, estado
+    mostrar_llena = False
+    if 'minijuego' in globals() and estado == "miniwh2":
+        try:
+            if hasattr(minijuego, 'botella') and hasattr(minijuego, 'meta'):
+                if minijuego.botella.gotas_recibidas >= minijuego.meta:
+                    mostrar_llena = True
+        except:
+            pass
+    if mostrar_llena:
+        recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua (1).png")
+    if os.path.exists(recipiente_img_path):
+        recipiente_img = pygame.image.load(recipiente_img_path)
+        recipiente_img = pygame.transform.scale(recipiente_img, (botella_rect.width, botella_rect.height))
+        pantalla.blit(recipiente_img, (botella_rect.left, botella_rect.top))
+    else:
+        # Fallback: dibujar la botella como antes
+        pygame.draw.rect(pantalla, BLANCO, botella_rect, 0)
+        pygame.draw.rect(pantalla, NEGRO, botella_rect, 3)
+        ojo1 = (botella_rect.centerx - 15, botella_rect.top + 40)
+        ojo2 = (botella_rect.centerx + 15, botella_rect.top + 40)
+        pygame.draw.circle(pantalla, NEGRO, ojo1, 6)
+        pygame.draw.circle(pantalla, NEGRO, ojo2, 6)
+        boca_rect = pygame.Rect(botella_rect.centerx - 20, botella_rect.top + 80, 40, 20)
+        pygame.draw.arc(pantalla, NEGRO, boca_rect, 3.14, 0, 3)
+    # Indicador de llenado si es correcto
     if mensaje == "Correcto":
         pygame.draw.rect(pantalla, AZUL, (botella_rect.left, botella_rect.bottom - 60, 80, 60))
 
@@ -139,19 +168,25 @@ class Botella:
     def __init__(self, x, y, ancho=60, alto=80):
         self.rect = pygame.Rect(x-ancho//2, y-alto, ancho, alto)
         self.gotas_recibidas = 0
-    def draw(self, surf):
-        # Dibuja un balde (cubo) con borde y manija
-        # Cuerpo del balde
-        cubo_rect = self.rect.inflate(-10, 0)
-        pygame.draw.rect(surf, (200, 200, 220), cubo_rect)
-        pygame.draw.rect(surf, (80, 80, 100), cubo_rect, 4)
-        # Borde superior (más grueso)
-        pygame.draw.rect(surf, (120, 120, 140), (cubo_rect.left, cubo_rect.top, cubo_rect.width, 12))
-        # Manija (arco)
-        cx = cubo_rect.centerx
-        top = cubo_rect.top
-        r = cubo_rect.width // 2
-        pygame.draw.arc(surf, (80, 80, 100), (cx - r, top - r//2, 2*r, r), 3.14, 0, 4)
+    def draw(self, surf, mostrar_llena=False):
+        # Usar imagen personalizada de recipiente
+        recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua.png")
+        if mostrar_llena:
+            recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua (1).png")
+        if os.path.exists(recipiente_img_path):
+            recipiente_img = pygame.image.load(recipiente_img_path)
+            recipiente_img = pygame.transform.scale(recipiente_img, (self.rect.width, self.rect.height))
+            surf.blit(recipiente_img, (self.rect.left, self.rect.top))
+        else:
+            # Fallback: dibujar el balde como antes
+            cubo_rect = self.rect.inflate(-10, 0)
+            pygame.draw.rect(surf, (200, 200, 220), cubo_rect)
+            pygame.draw.rect(surf, (80, 80, 100), cubo_rect, 4)
+            pygame.draw.rect(surf, (120, 120, 140), (cubo_rect.left, cubo_rect.top, cubo_rect.width, 12))
+            cx = cubo_rect.centerx
+            top = cubo_rect.top
+            r = cubo_rect.width // 2
+            pygame.draw.arc(surf, (80, 80, 100), (cx - r, top - r//2, 2*r, r), 3.14, 0, 4)
     def recibe_gota(self):
         self.gotas_recibidas += 1
 
@@ -186,115 +221,31 @@ class Gota:
                 bloque_colision = b
                 break
         if bloque_colision:
-            # Si no puede bajar, buscar moverse lateralmente aunque no haya espacio diagonal
-            saltos = [4, 8, 12]
-            movido = False
-            # Primero intentar bajar en diagonal
-            for salto in saltos:
-                puede_diag_izq = not any(b.collidepoint(self.x - self.radio - salto, self.y + salto) for b in bloques) and self.x - self.radio - salto > 0 and self.y + salto < ALTO 
-                puede_diag_der = not any(b.collidepoint(self.x + self.radio + salto, self.y + salto) for b in bloques) and self.x + self.radio + salto < ANCHO and self.y + salto < ALTO 
-                if puede_diag_izq:
-                    self.x -= salto
-                    self.y += salto
-                    movido = True
-                    break
-                elif puede_diag_der:
-                    self.x += salto
-                    self.y += salto
-                    Movido = True
-                    break
-            # Si no pudo bajar en diagonal, intentar solo lateral
-            if not movido:
-                for salto in saltos:
-                    puede_izq = not any(b.collidepoint(self.x - self.radio - salto, self.y) for b in bloques) and self.x - self.radio - salto > 0
-                    puede_der = not any(b.collidepoint(self.x + self.radio + salto, self.y) for b in bloques) and self.x + self.radio + salto < ANCHO
-                    if puede_izq and not puede_der:
-                        self.x -= salto
-                        break
-                    elif puede_der and not puede_izq:
-                        self.x += salto
-                        break
-                    elif puede_izq and puede_der:
-                        # Si ambas direcciones están libres, alternar para desbloquear
-                        if not hasattr(self, 'pref_lado'):
-                            self.pref_lado = 'izq'
-                        if self.pref_lado == 'izq':
-                            self.x -= salto
-                            self.pref_lado = 'der'
-                        else:
-                            self.x += salto
-                            self.pref_lado = 'izq'
-                        break
-            # Si no pudo moverse, buscar huecos más lejos a izquierda o derecha, y seguir moviéndose hasta poder bajar
-            if not movido:
-                rango = 50  # hasta 50 pixeles a cada lado
-                encontrado = False
-                for offset in range(1, rango+1):
-                    # Buscar hueco a la izquierda
-                    nx = self.x - offset
-                    ny = self.y + 1
-                    if nx > self.radio and not any(b.collidepoint(nx, ny) for b in bloques):
-                        # Verificar que debajo de ese hueco también esté libre para bajar
-                        while ny < ALTO and not any(b.collidepoint(nx, ny) for b in bloques):
-                            self.x = nx
-                            self.y = ny
-                            ny += 1
-                        encontrado = True
-                        break
-                    # Buscar hueco a la derecha
-                    nx = self.x + offset
-                    ny = self.y + 1
-                    if nx < ANCHO - self.radio and not any(b.collidepoint(nx, ny) for b in bloques):
-                        while ny < ALTO and not any(b.collidepoint(nx, ny) for b in bloques):
-                            self.x = nx
-                            self.y = ny
-                            ny += 1
-                        encontrado = True
-                        break
-                # Si sigue sin encontrar hueco, pero debajo suyo está libre, forzar que baje
-                if not encontrado:
-                    debajo_libre = not any(b.collidepoint(self.x, self.y + 1) for b in bloques)
-                    if debajo_libre and self.y + 1 < ALTO:
+            # Si colisiona con un bloque, intentar bajar 1 pixel (simula que el agua "roza" y sigue bajando)
+            debajo_libre = not any(b.collidepoint(self.x, self.y + 1) for b in bloques)
+            if debajo_libre and self.y + 1 < ALTO:
+                self.y += 1
+                self.vy = 0.5  # le damos un pequeño impulso hacia abajo
+            else:
+                # Si no puede bajar, buscar lateralmente el hueco más cercano para bajar
+                max_lado = 10  # menos agresivo para que no se pegue
+                movido_lateral = False
+                for d in range(1, max_lado+1):
+                    nx_izq = self.x - d
+                    nx_der = self.x + d
+                    if nx_izq > self.radio and not any(b.collidepoint(nx_izq, self.y + 1) for b in bloques):
+                        self.x = nx_izq
                         self.y += 1
-                    else:
-                        # Buscar lateralmente el hueco más cercano para bajar (despegar de paredes)
-                        max_lado = 20  # hasta 20 píxeles a cada lado
-                        movido_lateral = False
-                        centro = ANCHO // 2
-                        for d in range(1, max_lado+1):
-                            # Si está más cerca del borde derecho, priorizar izquierda
-                            if self.x > centro:
-                                # Buscar a la izquierda primero
-                                nx = self.x - d
-                                if nx > self.radio and not any(b.collidepoint(nx, self.y + 1) for b in bloques):
-                                    self.x = nx
-                                    self.y += 1
-                                    movido_lateral = True
-                                    break
-                                # Luego derecha
-                                nx = self.x + d
-                                if nx < ANCHO - self.radio and not any(b.collidepoint(nx, self.y + 1) for b in bloques):
-                                    self.x = nx
-                                    self.y += 1
-                                    movido_lateral = True
-                                    break
-                            else:
-                                # Si está más cerca del borde izquierdo, priorizar derecha
-                                nx = self.x + d
-                                if nx < ANCHO - self.radio and not any(b.collidepoint(nx, self.y + 1) for b in bloques):
-                                    self.x = nx
-                                    self.y += 1
-                                    movido_lateral = True
-                                    break
-                                # Luego izquierda
-                                nx = self.x - d
-                                if nx > self.radio and not any(b.collidepoint(nx, self.y + 1) for b in bloques):
-                                    self.x = nx
-                                    self.y += 1
-                                    movido_lateral = True
-                                    break
-                        if not movido_lateral:
-                            self.viva = False  # atrapada
+                        movido_lateral = True
+                        break
+                    if nx_der < ANCHO - self.radio and not any(b.collidepoint(nx_der, self.y + 1) for b in bloques):
+                        self.x = nx_der
+                        self.y += 1
+                        movido_lateral = True
+                        break
+                if not movido_lateral:
+                    # Si no puede moverse, la gota muere (queda atrapada)
+                    self.viva = False
             self.vy = 0
         else:
             self.x = nueva_x
@@ -418,7 +369,7 @@ class MiniWhereIsMyWater:
                     for i in range(5):
                         offset = random.uniform(-5, 5)
                         vx = random.uniform(-0.15, 0.15)
-                        self.gotas.append(Gota(ANCHO//2 + offset, 60, vx=vx, vy=0, radio=2))
+                        self.gotas.append(Gota(ANCHO//2 + offset, 60, vx=vx, vy=0, radio=1))
                     self.gotas_generadas += 1
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -457,7 +408,11 @@ class MiniWhereIsMyWater:
             if gota.viva and self.botella.rect.collidepoint(gota.x, gota.y):
                 gota.viva = False
                 self.botella.recibe_gota()
-        self.pantalla.fill((180,140,90))
+        # Fondo personalizado
+        if fondo_juego:
+            self.pantalla.blit(fondo_juego, (0, 0))
+        else:
+            self.pantalla.fill((180,140,90))
         for b in self.bloques:
             tex = pygame.transform.scale(block_texture, (b.width, b.height))
             self.pantalla.blit(tex, b)
@@ -467,11 +422,17 @@ class MiniWhereIsMyWater:
                 pygame.draw.rect(self.pantalla, (200,0,0), b, 4)
         for seg in self.caminos:
             pygame.draw.rect(self.pantalla, (100,100,100), seg)
-        self.botella.draw(self.pantalla)
+        # Mostrar la botella llena si se alcanzó la meta
+        mostrar_llena = self.botella.gotas_recibidas >= self.meta
+        self.botella.draw(self.pantalla, mostrar_llena=mostrar_llena)
         for gota in self.gotas:
             gota.draw(self.pantalla)
+        # Mostrar el contador en litros (1 litro = 30 gotas)
         fuente_chica = pygame.font.SysFont("Consolas", 15)
-        texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {self.botella.gotas_recibidas}ml/{self.meta}ml", True, (0,0,0))
+        gotas_por_litro = 30
+        litros_actual = self.botella.gotas_recibidas / gotas_por_litro
+        litros_objetivo = self.meta / gotas_por_litro
+        texto = fuente_chica.render(f"Nivel {self.nivel+1} - Gotas en botella: {litros_actual:.2f}/{litros_objetivo:.2f} litros", True, (0,0,0))
         self.pantalla.blit(texto, (20, 20))
 
         # Mostrar texto informativo debajo del contador
