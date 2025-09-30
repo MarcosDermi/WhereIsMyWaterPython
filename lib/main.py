@@ -1,16 +1,12 @@
+
 import pygame
 import sys
 import os
+from lib.Var import ANCHO, ALTO, MENU, JUGAR, INSTRUCCIONES
+from lib.Color import BLANCO, NEGRO, AZUL, GRIS
+from lib.Core import Botella, Gota
 
 pygame.init()
-
-# --- Constantes para formato "app" ---
-ANCHO, ALTO = 480, 800   # Pantalla vertical tipo smartphone
-BLANCO = (255, 255, 255)
-NEGRO = (0, 0, 0)
-AZUL = (50, 150, 255)
-GRIS = (200, 200, 200)
-
 
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("Aqua survivor")
@@ -41,7 +37,7 @@ else:
 
 
 
-MENU, JUGAR, INSTRUCCIONES  = "menu", "miniwh2", "instrucciones"
+
 estado = MENU
 
 # Variables de juego
@@ -171,107 +167,6 @@ def dibujar_juego():
 # --- Clases y lógica del minijuego tipo Where is My Water 2 ---
 import random
 
-class Botella:
-    def __init__(self, x, y, ancho=60, alto=80):
-        self.rect = pygame.Rect(x-ancho//2, y-alto, ancho, alto)
-        self.gotas_recibidas = 0
-    def draw(self, surf, mostrar_llena=False):
-        # Usar imagen personalizada de recipiente
-        recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua.png")
-        if mostrar_llena:
-            recipiente_img_path = os.path.join("lib", "Sprite", "Fondos", "agua (1).png")
-        if os.path.exists(recipiente_img_path):
-            recipiente_img = pygame.image.load(recipiente_img_path)
-            recipiente_img = pygame.transform.scale(recipiente_img, (self.rect.width, self.rect.height))
-            surf.blit(recipiente_img, (self.rect.left, self.rect.top))
-        else:
-            # Fallback: dibujar el balde como antes
-            cubo_rect = self.rect.inflate(-10, 0)
-            pygame.draw.rect(surf, (200, 200, 220), cubo_rect)
-            pygame.draw.rect(surf, (80, 80, 100), cubo_rect, 4)
-            pygame.draw.rect(surf, (120, 120, 140), (cubo_rect.left, cubo_rect.top, cubo_rect.width, 12))
-            cx = cubo_rect.centerx
-            top = cubo_rect.top
-            r = cubo_rect.width // 2
-            pygame.draw.arc(surf, (80, 80, 100), (cx - r, top - r//2, 2*r, r), 3.14, 0, 4)
-    def recibe_gota(self):
-        self.gotas_recibidas += 1
-
-class Gota:
-    def __init__(self, x, y, vx=0, vy=0, radio=1):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
-        self.radio = radio
-        self.color = (50,150,255)
-        self.viva = True
-    def update(self, bloques, caminos, gotas=None):
-        if not self.viva:
-            return
-        self.vy += 0.020  # gravedad reducida para que bajen 50% más lento
-        # Repulsión simple entre gotas cercanas (simula presión de agua)
-        if gotas is not None:
-            for otra in gotas:
-                if otra is not self and otra.viva:
-                    dx = self.x - otra.x
-                    dy = self.y - otra.y
-                    dist = (dx**2 + dy**2) ** 0.5
-                    if dist < self.radio*2 and dist > 0:
-                        self.vx += dx * 0.005
-                        self.vy += dy * 0.005
-        nueva_x = self.x + self.vx
-        nueva_y = self.y + self.vy
-        bloque_colision = None
-        for b in bloques:
-            if b.collidepoint(nueva_x, nueva_y):
-                bloque_colision = b
-                break
-        if bloque_colision:
-            # Si colisiona con un bloque, intentar bajar 1 pixel (simula que el agua "roza" y sigue bajando)
-            debajo_libre = not any(b.collidepoint(self.x, self.y + 1) for b in bloques)
-            if debajo_libre and self.y + 1 < ALTO:
-                self.y += 1
-                self.vy = 0.5  # le damos un pequeño impulso hacia abajo
-            else:
-                # Si no puede bajar, buscar lateralmente el hueco más cercano para bajar
-                max_lado = 10  # menos agresivo para que no se pegue
-                movido_lateral = False
-                for d in range(1, max_lado+1):
-                    nx_izq = self.x - d
-                    nx_der = self.x + d
-                    if nx_izq > self.radio and not any(b.collidepoint(nx_izq, self.y + 1) for b in bloques):
-                        self.x = nx_izq
-                        self.y += 1
-                        movido_lateral = True
-                        break
-                    if nx_der < ANCHO - self.radio and not any(b.collidepoint(nx_der, self.y + 1) for b in bloques):
-                        self.x = nx_der
-                        self.y += 1
-                        movido_lateral = True
-                        break
-                if not movido_lateral:
-                    # Si no puede moverse, la gota muere (queda atrapada)
-                    self.viva = False
-            self.vy = 0
-        else:
-            self.x = nueva_x
-            self.y = nueva_y
-            if hasattr(self, 'pref_lado'):
-                del self.pref_lado
-        # Rebote con caminos (líneas dibujadas)
-        for seg in caminos:
-            if seg.collidepoint(self.x, self.y):
-                self.vy *= -0.7
-                self.y += self.vy
-        # Limites pantalla
-        if self.x < self.radio or self.x > ANCHO-self.radio:
-            self.viva = False
-        if self.y > ALTO:
-            self.viva = False
-    def draw(self, surf):
-        if self.viva:
-            pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.radio)
 
 class MiniWhereIsMyWater:
     INFO_NIVELES = [
@@ -314,7 +209,7 @@ class MiniWhereIsMyWater:
         seleccionados = set()
         for fila, col in posiciones:
             if len(seleccionados) >= cantidad_no_borrables:
-                break
+                pass
             # No seleccionar si hay un bloque no borrable adyacente
             adyacentes = [
                 (fila-1, col), (fila+1, col),
@@ -393,14 +288,12 @@ class MiniWhereIsMyWater:
                             tupla = (b.x, b.y, b.width, b.height)
                             if b.collidepoint(event.pos) and tupla not in self.tuplas_no_borrables:
                                 self.bloques.remove(b)
-                                break
             else:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     for b in self.bloques[:]:
                         tupla = (b.x, b.y, b.width, b.height)
                         if b.collidepoint(event.pos) and tupla not in self.tuplas_no_borrables:
                             self.bloques.remove(b)
-                            break
                     else:
                         self.dibujando = True
                         self.linea_actual = [event.pos]
@@ -489,73 +382,79 @@ class MiniWhereIsMyWater:
                 self.final_victoria = True
         return False
 
-# --- Bucle principal ---
-while True:
-    events = pygame.event.get()
-    for event in events:
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
 
+def main():
+    global estado, minijuego, respuesta, mensaje, camino
+    running = True
+    while running:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                sys.exit()
+
+            if estado == MENU:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        estado = "miniwh2"
+                        minijuego = MiniWhereIsMyWater(pantalla)
+                    elif event.key == pygame.K_2:
+                        estado = INSTRUCCIONES
+                    elif event.key == pygame.K_3:
+                        running = False
+                        pygame.quit()
+                        sys.exit()
+
+            elif estado == INSTRUCCIONES:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    estado = MENU
+
+            elif estado == JUGAR:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        try:
+                            valor = float(respuesta)
+                            if 2 <= valor <= 3:  # rango correcto de litros recomendados
+                                mensaje = "Correcto"
+                            else:
+                                mensaje = "Incorrecto"
+                        except:
+                            mensaje = "Escribe un número"
+                    elif event.key == pygame.K_BACKSPACE:
+                        respuesta = respuesta[:-1]
+                    else:
+                        if event.unicode.isdigit() or event.unicode == ".":
+                            respuesta += event.unicode
+
+                # Dibujar camino con mouse
+                if pygame.mouse.get_pressed()[0]:
+                    camino.append(pygame.mouse.get_pos())
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    estado = MENU
+                    respuesta = ""
+                    mensaje = ""
+                    camino = []
+
+        # Render según estado
         if estado == MENU:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    estado = "miniwh2"
-                    minijuego = MiniWhereIsMyWater(pantalla)
-                elif event.key == pygame.K_2:
-                    estado = INSTRUCCIONES
-                elif event.key == pygame.K_3:
-                    pygame.quit()
-                    sys.exit()
-
+            dibujar_menu()
         elif estado == INSTRUCCIONES:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            dibujar_instrucciones()
+        elif estado == "miniwh2":
+            resultado = minijuego.run(events)
+            if resultado == True:
                 estado = MENU
-
-        elif estado == JUGAR:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    try:
-                        valor = float(respuesta)
-                        if 2 <= valor <= 3:  # rango correcto de litros recomendados
-                            mensaje = "Correcto"
-                        else:
-                            mensaje = "Incorrecto"
-                    except:
-                        mensaje = "Escribe un número"
-                elif event.key == pygame.K_BACKSPACE:
-                    respuesta = respuesta[:-1]
+            elif resultado == "next":
+                if minijuego.nivel < 2:
+                    minijuego = MiniWhereIsMyWater(pantalla, nivel=minijuego.nivel+1)
                 else:
-                    if event.unicode.isdigit() or event.unicode == ".":
-                        respuesta += event.unicode
-
-            # Dibujar camino con mouse
-            if pygame.mouse.get_pressed()[0]:
-                camino.append(pygame.mouse.get_pos())
-
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    minijuego.final_victoria = True
+            elif resultado == "menu":
                 estado = MENU
-                respuesta = ""
-                mensaje = ""
-                camino = []
 
+        pygame.display.flip()
 
-    # Render según estado
-    if estado == MENU:
-        dibujar_menu()
-    elif estado == INSTRUCCIONES:
-        dibujar_instrucciones()
-    elif estado == "miniwh2":
-        resultado = minijuego.run(events)
-        if resultado == True:
-            estado = MENU
-        elif resultado == "next":
-            if minijuego.nivel < 2:
-                minijuego = MiniWhereIsMyWater(pantalla, nivel=minijuego.nivel+1)
-            else:
-                minijuego.final_victoria = True
-        elif resultado == "menu":
-            estado = MENU
-
-    pygame.display.flip()
-
+if __name__ == "__main__":
+    main()
